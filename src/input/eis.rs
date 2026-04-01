@@ -134,6 +134,23 @@ fn process_eis_request(
 ) {
     let time = state.common.clock.now().as_millis();
 
+    // Notify the idle system that there is user activity from the remote
+    // session, so the screen wakes up / stays awake on EIS input.
+    if matches!(
+        request,
+        EisRequest::KeyboardKey(_)
+            | EisRequest::PointerMotion(_)
+            | EisRequest::PointerMotionAbsolute(_)
+            | EisRequest::Button(_)
+            | EisRequest::ScrollDelta(_)
+            | EisRequest::TouchDown(_)
+            | EisRequest::TouchMotion(_)
+            | EisRequest::TouchUp(_)
+    ) {
+        let seat = state.common.shell.read().seats.last_active().clone();
+        state.common.idle_notifier_state.notify_activity(&seat);
+    }
+
     match request {
         EisRequest::KeyboardKey(key_evt) => {
             if key_evt.key > MAX_EVDEV_KEYCODE {
